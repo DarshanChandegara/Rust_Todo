@@ -1,11 +1,12 @@
 use crossterm::{execute, terminal::{Clear, ClearType}, cursor::MoveTo};
 use std::{io::{self, stdout, Write}, process::exit};
-
+use serde::{Serialize, Deserialize};
 pub fn clear_terminal() {
     let mut stdout = stdout();
     execute!(stdout, Clear(ClearType::All), MoveTo(0, 0)).unwrap();
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Task {
     pub Title: String , 
     pub Description: String,

@@ -1,4 +1,5 @@
 mod lib;
+mod json;
 use std::io::{self, Write};
 mod test;
 
@@ -12,6 +13,9 @@ fn main() {
         println!("2. List Tasks");
         println!("3. Remove Task");
         println!("4. Change Task status");
+        println!("5. load json");
+        println!("6. Save and Exit");
+
 
         let mut choice = String::new();
         print!("Enter your choice: ");
@@ -54,6 +58,13 @@ fn main() {
                 io::stdin().read_line(&mut id).unwrap();
                 list.change_task_status(id.trim().parse().unwrap());
             },
+            5 => {
+                list = json::load_json();
+            },
+            6 => {
+                json::save_json(&list);
+                break;
+            }
             _ => {
                 break;
             }
