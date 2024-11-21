@@ -1,16 +1,32 @@
-use crossterm::{execute, terminal::{Clear, ClearType}, cursor::MoveTo};
-use std::{io::{self, stdout, Write}, process::exit};
-use serde::{Serialize, Deserialize};
-pub fn clear_terminal() {
-    let mut stdout = stdout();
-    execute!(stdout, Clear(ClearType::All), MoveTo(0, 0)).unwrap();
-}
+use serde::{Deserialize, Serialize};
+use std::{
+    io::{self, Write},
+    process::exit,
+};
+use tabled::{settings::Style, Table, Tabled};
 
 #[derive(Serialize, Deserialize)]
 pub struct Task {
-    pub Title: String , 
+    pub Title: String,
     pub Description: String,
-    pub isComplete: bool
+    pub isComplete: bool,
+}
+
+#[derive(Tabled)]
+struct NumberedTask {
+    id: usize,
+    pub Title: String,
+    pub Description: String,
+    #[tabled(display_with = "bool_to_status")]
+    pub isComplete: bool,
+}
+
+fn bool_to_status(completed: &bool) -> String {
+    if *completed {
+        "Complete".to_string()
+    } else {
+        "Pending".to_string()
+    }
 }
 
 pub struct TodoList {
@@ -22,46 +38,51 @@ impl TodoList {
         TodoList { tasks: Vec::new() }
     }
 
-    pub fn add_task(&mut self , desc: &str , title: &str) {
+    fn get_numberd_task(&self) -> Vec<NumberedTask> {
+        self.tasks
+            .iter()
+            .enumerate()
+            .map(|(i, task)| NumberedTask {
+                id: i + 1,
+                Title: task.Title.clone(),
+                Description: task.Description.clone(),
+                isComplete: task.isComplete,
+            })
+            .collect()
+    }
+
+    pub fn add_task(&mut self, desc: &str, title: &str) {
         let task = Task {
             Description: desc.to_string(),
             Title: title.to_string(),
-            isComplete: false
+            isComplete: false,
         };
 
         self.tasks.push(task);
         println!("Task Added Successfully");
-
     }
 
-    pub fn list_task(& self) {
-        clear_terminal();
-        for (i , task) in self.tasks.iter().enumerate() {
-            println!("\n\nNumber : {}\nTitle :- {}\nDescripton :- {}\nStatus :- {}" ,i+1,task.Title , task.Description ,if task.isComplete {"Completed"} else {"Pending"});
-        }
+    pub fn list_task(&self) {
+        if self.tasks.len() == 0 {
+            println!("No tasks to list");
+        } else {
+            let numbered_tasks: Vec<NumberedTask> = self.get_numberd_task();
 
-        let mut input = String::new();
-        print!("Press C to continue: ");
-        io::stdout().flush().unwrap();
-        io::stdin().read_line(&mut input).unwrap();
-        println!("{}" , input.trim());
-        if input.trim() == "c"{
-            clear_terminal();
-        }else {
-            exit(1);
+            let mut table = Table::new(&numbered_tasks);
+            println!("{}", table.with(Style::modern_rounded()));
         }
     }
 
-    pub fn remove_task(&mut self ,id: usize) {
+    pub fn remove_task(&mut self, id: usize) {
         if self.tasks.len() == 0 {
             println!("No tasks to remove");
         } else {
             println!("Task Removed Successfully");
-            self.tasks.remove(id-1);
+            self.tasks.remove(id - 1);
         }
     }
 
-    pub fn change_task_status(&mut self , id: usize) {
-        self.tasks[id-1].isComplete = !self.tasks[id-1].isComplete;
+    pub fn change_task_status(&mut self, id: usize) {
+        self.tasks[id - 1].isComplete = !self.tasks[id - 1].isComplete;
     }
 }
