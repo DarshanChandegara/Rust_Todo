@@ -27,8 +27,9 @@ fn read_file(filepath: &str) -> String {
     content
 }
 
-pub fn print_all_files() {
+pub fn print_all_files() -> bool {
     let path = "files/";
+    let mut fileFound: bool = false;
     match fs::read_dir(path) {
         Ok(entries) => {
             println!();
@@ -36,6 +37,7 @@ pub fn print_all_files() {
                 if let Ok(entry) = entry {
                     if let Some(file_name) = entry.file_name().to_str() {
                         if let Some(file_name_without_ext) = file_name.split('.').next() {
+                            fileFound = true;
                             println!("{}", file_name_without_ext);
                         } else {
                             println!("{}", file_name);
@@ -48,9 +50,11 @@ pub fn print_all_files() {
                 }
             }
             println!();
+            fileFound
         }
         Err(e) => {
             eprintln!("Error reading directory: {}", e);
+            fileFound
         }
     }
 }

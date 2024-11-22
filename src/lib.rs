@@ -51,10 +51,10 @@ impl TodoList {
             .collect()
     }
 
-    pub fn add_task(&mut self, desc: &str, title: &str) {
+    pub fn add_task(&mut self, title: &str, desc: &str) {
         let task = Task {
-            Description: desc.to_string(),
             Title: title.to_string(),
+            Description: desc.to_string(),
             isComplete: false,
         };
 
