@@ -1,8 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::{
-    io::{self, Write},
-    process::exit,
-};
 use tabled::{settings::Style, Table, Tabled};
 
 #[derive(Serialize, Deserialize)]

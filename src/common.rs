@@ -1,4 +1,4 @@
-use crate::file::{self, print_all_files};
+use crate::{file, DB};
 use crate::lib::TodoList;
 use crossterm::{
     cursor::MoveTo,
@@ -8,6 +8,7 @@ use crossterm::{
 use std::io::{self, stdout, Write};
 use std::thread;
 use std::time::Duration;
+use rusqlite::{Connection};
 
 pub fn take_user_input(msg: &str) -> String {
     let mut input = String::new();
@@ -22,7 +23,7 @@ pub fn clear_terminal() {
     execute!(stdout, Clear(ClearType::All), MoveTo(0, 0)).unwrap();
 }
 
-pub fn start() {
+pub fn start(conn: &Connection) {
     let mut list = TodoList::new();
 
     let mut fileName: Option<String> = None;
@@ -65,10 +66,10 @@ pub fn start() {
         }
         _ => { return ;}
     }
-    run(&mut list, fileName);
+    run(&mut list, fileName , &conn);
 }
 
-fn run(list: &mut TodoList, fileName: Option<String>) {
+fn run(list: &mut TodoList, fileName: Option<String> , conn: &Connection) {
     loop {
         clear_terminal();
         println!("\nTo-Do List");
@@ -87,7 +88,8 @@ fn run(list: &mut TodoList, fileName: Option<String>) {
                 clear_terminal();
                 let mut title = take_user_input("Enter task title: ");
                 let mut description = take_user_input("Enter task description: ");
-
+                
+                DB::insert_task(&crate::lib::Task { Title: title.clone(), Description: description.clone(), isComplete: false }, &fileName, conn);
                 list.add_task(title.trim(), description.trim());
             }
             2 => {
@@ -114,7 +116,7 @@ fn run(list: &mut TodoList, fileName: Option<String>) {
                 list.change_task_status(id.trim().parse().unwrap());
             }
             5 => {
-                if (list.tasks.len() == 0) {
+                if list.tasks.len() == 0 {
                     println!("No tasks to save");
                     thread::sleep(Duration::from_secs(1));
                 } else {

@@ -4,7 +4,6 @@ use std::{
     fs::{self, File},
     io::Write,
 };
-use tabled::{settings::Style, Table, Tabled};
 
 pub fn save_json(list: &lib::TodoList, filename: &String) {
     let json = serde_json::to_string_pretty(&list.tasks).unwrap();
