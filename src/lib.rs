@@ -8,9 +8,9 @@ pub struct Task {
     pub isComplete: bool,
 }
 
-#[derive(Tabled)]
-struct NumberedTask {
-    id: usize,
+#[derive(Tabled , Debug)]
+pub struct NumberedTask {
+    pub id: usize,
     pub Title: String,
     pub Description: String,
     #[tabled(display_with = "bool_to_status")]
@@ -58,12 +58,12 @@ impl TodoList {
         println!("Task Added Successfully");
     }
 
-    pub fn list_task(&self) {
+    pub fn list_task(&self ) {
         if self.tasks.len() == 0 {
             println!("No tasks to list");
         } else {
-            let numbered_tasks: Vec<NumberedTask> = self.get_numberd_task();
 
+            let numbered_tasks = self.get_numberd_task();
             let mut table = Table::new(&numbered_tasks);
             println!("{}", table.with(Style::modern_rounded()));
         }

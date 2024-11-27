@@ -1,5 +1,6 @@
 use rusqlite::{Connection, Result};
-use crate::lib::Task;
+use crate::lib::{Task , NumberedTask , TodoList};
+use crate::common::group;
 
 pub fn database_init() -> Result<Connection> {
     let conn = Connection::open("./tasks.db")?;
@@ -22,4 +23,50 @@ pub fn insert_task(task: &Task, group: &Option<String> ,conn: &Connection) -> Re
         task.Description.as_str(), task.isComplete, group.as_ref().unwrap().clone())
     )?;
     Ok(())
+}
+
+pub fn get_task(group: &Option<String> ,conn: &Connection) ->Result<(Vec<NumberedTask>)> {
+    let query = format!("SELECT id, title, description, isComplete FROM tasks WHERE taskGroup = \"{}\"", group.as_ref().unwrap());
+    let mut stmt = conn.prepare(&query.as_str())?;
+
+    let tasks_iter = stmt.query_map([], |row| {
+
+        let id = row.get::<_ , usize>(0)?;
+        let Title = row.get::<_ , String>(1)?;
+        let Description = row.get::<_ , String>(2)?;
+        let isComplete = row.get::<_ , bool>(3)?;
+
+        println!("ID: {}, Title: {}, Description: {}, isComplete: {}", id, Title, Description, isComplete);
+        Ok(NumberedTask {
+            id,
+            Title,
+            Description,
+            isComplete
+        })
+    })?;    
+    let mut tasks: Vec<NumberedTask> = Vec::new();
+    for task in tasks_iter {
+        tasks.push(task.unwrap());
+    }
+    println!("{:#?}" , tasks);
+    Ok(tasks)
+}
+
+pub fn show_groups(conn: &Connection) -> Result<(Vec<group>)> {
+    let query = format!("SELECT DISTINCT taskGroup FROM tasks");
+    let mut stmt = conn.prepare(&query.as_str())?;
+
+    let tasks_iter = stmt.query_map([], |row| {
+
+        let name = row.get::<_ , String>(0)?;
+        Ok(
+            name
+        )
+    })?;    
+    let mut groups: Vec<group> = Vec::new();
+    for (id , group) in tasks_iter.into_iter().enumerate() {
+        println!("{:#?}" , group);
+        groups.push(group{id: id+1 , name: group.unwrap().clone()});
+    }
+    Ok((groups))
 }
