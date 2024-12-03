@@ -130,16 +130,17 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                 let mut title = take_user_input("Enter task title: ");
                 let mut description = take_user_input("Enter task description: ");
 
-                let _ = DB::insert_task(
+                let id= DB::insert_task(
                     &crate::lib::Task {
                         Title: title.clone().trim().to_string(),
                         Description: description.clone().trim().to_string(),
                         isComplete: false,
+                        id: 0,
                     },
                     &fileName,
                     conn,
                 );
-                list.add_task(title.trim(), description.trim());
+                list.add_task(id.unwrap(),title.trim(), description.trim());
             }
             2 => {
                 clear_terminal();

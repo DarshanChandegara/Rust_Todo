@@ -1,21 +1,14 @@
 use serde::{Deserialize, Serialize};
 use tabled::{settings::Style, Table, Tabled};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug , Tabled)]
 pub struct Task {
+    pub id: usize,
     pub Title: String,
     pub Description: String,
     pub isComplete: bool,
 }
 
-#[derive(Tabled, Debug)]
-pub struct NumberedTask {
-    pub id: usize,
-    pub Title: String,
-    pub Description: String,
-    #[tabled(display_with = "bool_to_status")]
-    pub isComplete: bool,
-}
 
 fn bool_to_status(completed: &bool) -> String {
     if *completed {
@@ -34,21 +27,9 @@ impl TodoList {
         TodoList { tasks: Vec::new() }
     }
 
-    fn get_numberd_task(&self) -> Vec<NumberedTask> {
-        self.tasks
-            .iter()
-            .enumerate()
-            .map(|(i, task)| NumberedTask {
-                id: i + 1,
-                Title: task.Title.clone(),
-                Description: task.Description.clone(),
-                isComplete: task.isComplete,
-            })
-            .collect()
-    }
-
-    pub fn add_task(&mut self, title: &str, desc: &str) {
+    pub fn add_task(&mut self, id: usize, title: &str, desc: &str) {
         let task = Task {
+            id : id ,
             Title: title.to_string(),
             Description: desc.to_string(),
             isComplete: false,
@@ -62,8 +43,7 @@ impl TodoList {
         if self.tasks.len() == 0 {
             println!("No tasks to list");
         } else {
-            let numbered_tasks = self.get_numberd_task();
-            let mut table = Table::new(&numbered_tasks);
+            let mut table = Table::new(&self.tasks);
             println!("{}", table.with(Style::modern_rounded()));
         }
     }

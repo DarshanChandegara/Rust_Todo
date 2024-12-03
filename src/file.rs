@@ -8,7 +8,6 @@ use std::{
 pub fn save_json(list: &lib::TodoList, filename: &String) {
     let json = serde_json::to_string_pretty(&list.tasks).unwrap();
     let filepath = format!("files/{}.json", filename);
-    // println!("{}" , filepath);
     let mut file = File::create(filepath).unwrap();
     file.write_all(json.as_bytes()).unwrap();
     println!("Files saved successfully");

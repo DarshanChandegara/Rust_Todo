@@ -1,5 +1,5 @@
 use crate::common::group;
-use crate::lib::{NumberedTask, Task, TodoList};
+use crate::lib::{Task, TodoList};
 use rusqlite::{Connection, Result};
 
 pub fn database_init() -> Result<Connection> {
@@ -17,7 +17,7 @@ pub fn database_init() -> Result<Connection> {
     Ok(conn)
 }
 
-pub fn insert_task(task: &Task, group: &Option<String>, conn: &Connection) -> Result<()> {
+pub fn insert_task(task: &Task, group: &Option<String>, conn: &Connection) -> Result<(usize)> {
     conn.execute(
         "INSERT INTO tasks (title, description, isComplete, taskGroup) VALUES (?, ?, ?, ?)",
         (
@@ -27,10 +27,11 @@ pub fn insert_task(task: &Task, group: &Option<String>, conn: &Connection) -> Re
             group.as_ref().unwrap().clone(),
         ),
     )?;
-    Ok(())
+
+    Ok((conn.last_insert_rowid()).try_into().unwrap())
 }
 
-pub fn get_task(group: &Option<String>, conn: &Connection) -> Result<(Vec<NumberedTask>)> {
+pub fn get_task(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
     let query = format!(
         "SELECT id, title, description, isComplete FROM tasks WHERE taskGroup = \"{}\"",
         group.as_ref().unwrap()
@@ -43,22 +44,17 @@ pub fn get_task(group: &Option<String>, conn: &Connection) -> Result<(Vec<Number
         let Description = row.get::<_, String>(2)?;
         let isComplete = row.get::<_, bool>(3)?;
 
-        println!(
-            "ID: {}, Title: {}, Description: {}, isComplete: {}",
-            id, Title, Description, isComplete
-        );
-        Ok(NumberedTask {
+        Ok(Task {
             id,
             Title,
             Description,
             isComplete,
         })
     })?;
-    let mut tasks: Vec<NumberedTask> = Vec::new();
+    let mut tasks: Vec<Task> = Vec::new();
     for task in tasks_iter {
         tasks.push(task.unwrap());
     }
-    println!("{:#?}", tasks);
     Ok(tasks)
 }
 
@@ -87,6 +83,7 @@ pub fn load_tasks(group: &Option<String>, conn: &Connection) -> Result<TodoList>
     let tasks = number_tasks
         .iter()
         .map(|task| Task {
+            id: task.id,
             Title: task.Title.clone().trim().to_string(),
             Description: task.Description.clone().trim().to_string(),
             isComplete: task.isComplete,
