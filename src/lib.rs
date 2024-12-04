@@ -6,6 +6,7 @@ pub struct Task {
     pub id: usize,
     pub Title: String,
     pub Description: String,
+    #[tabled(display_with = "bool_to_status")]
     pub isComplete: bool,
 }
 
@@ -52,12 +53,18 @@ impl TodoList {
         if self.tasks.len() == 0 {
             println!("No tasks to remove");
         } else {
+            self.tasks.retain(|task| task.id != id);
             println!("Task Removed Successfully");
-            self.tasks.remove(id - 1);
         }
     }
 
-    pub fn change_task_status(&mut self, id: usize) {
-        self.tasks[id - 1].isComplete = !self.tasks[id - 1].isComplete;
+    pub fn update(&mut self, id: usize , task: Task) {
+        if self.tasks.len() == 0 {
+            println!("No tasks to update");
+        } else {
+            self.tasks.retain(|task| task.id != id);
+            self.tasks.push(task);
+            println!("Task Updated Successfully");
+        }
     }
 }

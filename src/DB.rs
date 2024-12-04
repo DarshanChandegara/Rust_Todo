@@ -31,7 +31,7 @@ pub fn insert_task(task: &Task, group: &Option<String>, conn: &Connection) -> Re
     Ok((conn.last_insert_rowid()).try_into().unwrap())
 }
 
-pub fn get_task(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
+fn get_tasks(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
     let query = format!(
         "SELECT id, title, description, isComplete FROM tasks WHERE taskGroup = \"{}\"",
         group.as_ref().unwrap()
@@ -58,6 +58,30 @@ pub fn get_task(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)
     Ok(tasks)
 }
 
+pub fn get_task(id: usize, group: &Option<String>, conn: &Connection) -> Result<Task> {
+    let query = format!(
+        "SELECT id, title, description, isComplete FROM tasks WHERE id = {} AND taskGroup = \"{}\"",
+        id,group.as_ref().unwrap()
+    );
+    let mut stmt = conn.prepare(&query.as_str())?;
+
+    let task = stmt.query_row([], |row| {
+        let id = row.get::<_, usize>(0)?;
+        let Title = row.get::<_, String>(1)?;
+        let Description = row.get::<_, String>(2)?;
+        let isComplete = row.get::<_, bool>(3)?;
+
+        Ok(Task {
+            id,
+            Title,
+            Description,
+            isComplete,
+        })
+    })?;
+
+    Ok(task)
+}
+
 pub fn show_groups(conn: &Connection) -> Result<(Vec<group>)> {
     let query = format!("SELECT DISTINCT taskGroup FROM tasks");
     let mut stmt = conn.prepare(&query.as_str())?;
@@ -79,7 +103,7 @@ pub fn show_groups(conn: &Connection) -> Result<(Vec<group>)> {
 pub fn load_tasks(group: &Option<String>, conn: &Connection) -> Result<TodoList> {
     let mut todo = TodoList::new();
 
-    let number_tasks = get_task(group, conn).unwrap();
+    let number_tasks = get_tasks(group, conn).unwrap();
     let tasks = number_tasks
         .iter()
         .map(|task| Task {
@@ -92,4 +116,26 @@ pub fn load_tasks(group: &Option<String>, conn: &Connection) -> Result<TodoList>
 
     todo.tasks = tasks;
     Ok((todo))
+}
+
+pub fn delete_task(id: usize, group: &Option<String>, conn: &Connection) -> Result<()> {
+    conn.execute(
+        "DELETE FROM tasks WHERE id = ? AND taskGroup = ?",
+        (id, group.as_ref().unwrap()),
+    )?;
+    Ok(())
+}
+
+pub fn update_task(task:&Task , group: &Option<String>, conn: &Connection) -> Result<()> {
+    conn.execute(
+        "UPDATE tasks SET title = ?, description = ?, isComplete = ? WHERE id = ? AND taskGroup = ?",
+        (
+            task.Title.as_str(),
+            task.Description.as_str(),
+            task.isComplete,
+            task.id,
+            group.as_ref().unwrap(),
+        ),
+    )?;
+    Ok(())
 }

@@ -1,17 +1,16 @@
 use crate::file::print_all_files;
-use crate::lib::TodoList;
+use crate::lib::{self, Task, TodoList};
 use crate::{file, DB};
 use crossterm::{
     cursor::MoveTo,
     execute,
     terminal::{Clear, ClearType},
 };
-use rusqlite::Connection;
+use rusqlite::{Connection, Result};
 use std::io::{self, stdout, Write};
 use std::thread;
 use std::time::Duration;
 use tabled::{settings::Style, Table, Tabled};
-
 #[derive(Tabled)]
 pub struct group {
     pub id: usize,
@@ -24,6 +23,27 @@ pub fn take_user_input(msg: &str) -> String {
     io::stdout().flush().unwrap();
     io::stdin().read_line(&mut input).unwrap();
     input
+}
+
+pub fn prompt_field_update(id : usize , group : &Option<String>, conn : &Connection) -> Result<(Task)> {
+    clear_terminal();
+    let mut task = DB::get_task(id , group, conn)?;
+
+    println!("Enter # for filed to not to update Otherwise enter new value");
+    let mut title = take_user_input("Enter task title: ");
+    let mut description = take_user_input("Enter task description: ");
+    let mut status = take_user_input("Enter task status: (false / true)");
+
+    if title.trim() != "#" {
+        task.Title = title.trim().to_string();
+    }
+    if description.trim() != "#" {
+        task.Description = description.trim().to_string();
+    }
+    if status.trim() != "#" {
+        task.isComplete = status.trim().parse().unwrap();
+    }
+    Ok((task))  
 }
 
 pub fn clear_terminal() {
@@ -117,7 +137,7 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
         println!("1. Add Task");
         println!("2. List Tasks");
         println!("3. Remove Task");
-        println!("4. Change Task status");
+        println!("4. Update Task");
         println!("5. Save");
         println!("6. Exit");
 
@@ -141,6 +161,7 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                     conn,
                 );
                 list.add_task(id.unwrap(),title.trim(), description.trim());
+                thread::sleep(Duration::from_secs(1));
             }
             2 => {
                 clear_terminal();
@@ -155,17 +176,38 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
             }
             3 => {
                 clear_terminal();
-                let numbered_tasks = DB::get_task(&fileName, conn);
                 list.list_task();
                 let id = take_user_input("Enter task id: ");
-                list.remove_task(id.trim().parse().unwrap());
+                match DB::delete_task(id.trim().parse().unwrap(), &fileName, conn){
+                    Ok(())  => {
+                        list.remove_task(id.trim().parse().unwrap());
+                        thread::sleep(Duration::from_secs(1));
+                    }
+                    Err(e) => println!("Error: {}", e)
+                }
             }
             4 => {
                 clear_terminal();
-                let numbered_tasks = DB::get_task(&fileName, conn);
                 list.list_task();
-                let id = take_user_input("Enter task id: ");
-                list.change_task_status(id.trim().parse().unwrap());
+                let mut id = take_user_input("Enter task id: ");
+                id = id.trim().parse().unwrap();
+                match prompt_field_update(id.trim().parse().unwrap(), &fileName, conn) {
+                    Ok(task) => {
+                        match DB::update_task(&task, &fileName, conn) {
+                            Ok(()) => {
+                                list.update(id.trim().parse().unwrap(), task);
+                                thread::sleep(Duration::from_secs(1));
+                            }
+                            Err(e) => {
+                                println!("Error: {}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error: {}", e);
+                    }
+                }
+                
             }
             5 => {
                 if list.tasks.len() == 0 {
