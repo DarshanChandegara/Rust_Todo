@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tabled::{settings::Style, Table, Tabled};
 
-#[derive(Serialize, Deserialize, Debug , Tabled)]
+#[derive(Serialize, Deserialize, Debug, Tabled)]
 pub struct Task {
     pub id: usize,
     pub Title: String,
@@ -9,7 +9,6 @@ pub struct Task {
     #[tabled(display_with = "bool_to_status")]
     pub isComplete: bool,
 }
-
 
 fn bool_to_status(completed: &bool) -> String {
     if *completed {
@@ -30,7 +29,7 @@ impl TodoList {
 
     pub fn add_task(&mut self, id: usize, title: &str, desc: &str) {
         let task = Task {
-            id : id ,
+            id: id,
             Title: title.to_string(),
             Description: desc.to_string(),
             isComplete: false,
@@ -58,7 +57,7 @@ impl TodoList {
         }
     }
 
-    pub fn update(&mut self, id: usize , task: Task) {
+    pub fn update(&mut self, id: usize, task: Task) {
         if self.tasks.len() == 0 {
             println!("No tasks to update");
         } else {

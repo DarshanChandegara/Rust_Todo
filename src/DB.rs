@@ -61,7 +61,8 @@ fn get_tasks(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
 pub fn get_task(id: usize, group: &Option<String>, conn: &Connection) -> Result<Task> {
     let query = format!(
         "SELECT id, title, description, isComplete FROM tasks WHERE id = {} AND taskGroup = \"{}\"",
-        id,group.as_ref().unwrap()
+        id,
+        group.as_ref().unwrap()
     );
     let mut stmt = conn.prepare(&query.as_str())?;
 
@@ -126,7 +127,7 @@ pub fn delete_task(id: usize, group: &Option<String>, conn: &Connection) -> Resu
     Ok(())
 }
 
-pub fn update_task(task:&Task , group: &Option<String>, conn: &Connection) -> Result<()> {
+pub fn update_task(task: &Task, group: &Option<String>, conn: &Connection) -> Result<()> {
     conn.execute(
         "UPDATE tasks SET title = ?, description = ?, isComplete = ? WHERE id = ? AND taskGroup = ?",
         (
