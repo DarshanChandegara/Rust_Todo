@@ -9,7 +9,7 @@ pub fn database_init() -> Result<Connection> {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
             description TEXT,
-            isComplete BOOL ,
+            stage TEXT ,
             taskGroup TEXT 
         )",
         (),
@@ -19,11 +19,11 @@ pub fn database_init() -> Result<Connection> {
 
 pub fn insert_task(task: &Task, group: &Option<String>, conn: &Connection) -> Result<(usize)> {
     conn.execute(
-        "INSERT INTO tasks (title, description, isComplete, taskGroup) VALUES (?, ?, ?, ?)",
+        "INSERT INTO tasks (title, description, stage, taskGroup) VALUES (?, ?, ?, ?)",
         (
             task.Title.as_str(),
             task.Description.as_str(),
-            task.isComplete,
+            task.stage.as_str(),
             group.as_ref().unwrap().clone(),
         ),
     )?;
@@ -33,7 +33,7 @@ pub fn insert_task(task: &Task, group: &Option<String>, conn: &Connection) -> Re
 
 fn get_tasks(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
     let query = format!(
-        "SELECT id, title, description, isComplete FROM tasks WHERE taskGroup = \"{}\"",
+        "SELECT id, title, description, stage FROM tasks WHERE taskGroup = \"{}\"",
         group.as_ref().unwrap()
     );
     let mut stmt = conn.prepare(&query.as_str())?;
@@ -42,13 +42,13 @@ fn get_tasks(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
         let id = row.get::<_, usize>(0)?;
         let Title = row.get::<_, String>(1)?;
         let Description = row.get::<_, String>(2)?;
-        let isComplete = row.get::<_, bool>(3)?;
+        let stage = row.get::<_, String>(3)?;
 
         Ok(Task {
             id,
             Title,
             Description,
-            isComplete,
+            stage,
         })
     })?;
     let mut tasks: Vec<Task> = Vec::new();
@@ -60,7 +60,7 @@ fn get_tasks(group: &Option<String>, conn: &Connection) -> Result<(Vec<Task>)> {
 
 pub fn get_task(id: usize, group: &Option<String>, conn: &Connection) -> Result<Task> {
     let query = format!(
-        "SELECT id, title, description, isComplete FROM tasks WHERE id = {} AND taskGroup = \"{}\"",
+        "SELECT id, title, description, stage FROM tasks WHERE id = {} AND taskGroup = \"{}\"",
         id,
         group.as_ref().unwrap()
     );
@@ -70,13 +70,13 @@ pub fn get_task(id: usize, group: &Option<String>, conn: &Connection) -> Result<
         let id = row.get::<_, usize>(0)?;
         let Title = row.get::<_, String>(1)?;
         let Description = row.get::<_, String>(2)?;
-        let isComplete = row.get::<_, bool>(3)?;
+        let stage = row.get::<_, String>(3)?;
 
         Ok(Task {
             id,
             Title,
             Description,
-            isComplete,
+            stage,
         })
     })?;
 
@@ -111,7 +111,7 @@ pub fn load_tasks(group: &Option<String>, conn: &Connection) -> Result<TodoList>
             id: task.id,
             Title: task.Title.clone().trim().to_string(),
             Description: task.Description.clone().trim().to_string(),
-            isComplete: task.isComplete,
+            stage: task.stage.clone().trim().to_string(),
         })
         .collect();
 
@@ -129,11 +129,11 @@ pub fn delete_task(id: usize, group: &Option<String>, conn: &Connection) -> Resu
 
 pub fn update_task(task: &Task, group: &Option<String>, conn: &Connection) -> Result<()> {
     conn.execute(
-        "UPDATE tasks SET title = ?, description = ?, isComplete = ? WHERE id = ? AND taskGroup = ?",
+        "UPDATE tasks SET title = ?, description = ?, stage = ? WHERE id = ? AND taskGroup = ?",
         (
             task.Title.as_str(),
             task.Description.as_str(),
-            task.isComplete,
+            task.stage.as_str(),
             task.id,
             group.as_ref().unwrap(),
         ),

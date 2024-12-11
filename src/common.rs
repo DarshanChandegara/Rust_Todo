@@ -1,5 +1,5 @@
 use crate::file::print_all_files;
-use crate::lib::{self, Task, TodoList};
+use crate::lib::{display_status_bar, num_to_status, Task, TodoList};
 use crate::{file, DB};
 use crossterm::{
     cursor::MoveTo,
@@ -26,6 +26,21 @@ pub fn take_user_input(msg: &str) -> String {
     input
 }
 
+pub fn take_user_input_for_task() -> String {
+    let mut input = String::new();
+    println!("Task Stages");
+    println!("1] To-Do ");
+    println!("2] Doing ");
+    println!("3] Review ");
+    println!("4] Completed ");
+    print!("Enter Task Stage Number:- ");
+    io::stdout().flush().unwrap();
+    io::stdin().read_line(&mut input).unwrap();
+    let input = input.trim().parse::<u8>();
+
+    num_to_status(&input.unwrap())
+}
+
 pub fn prompt_field_update(id: usize, group: &Option<String>, conn: &Connection) -> Result<(Task)> {
     clear_terminal();
     let mut task = DB::get_task(id, group, conn)?;
@@ -33,7 +48,7 @@ pub fn prompt_field_update(id: usize, group: &Option<String>, conn: &Connection)
     println!("Enter # for filed to not to update Otherwise enter new value");
     let mut title = take_user_input("Enter task title: ");
     let mut description = take_user_input("Enter task description: ");
-    let mut status = take_user_input("Enter task status: (false / true)");
+    let mut status = take_user_input_for_task();
 
     if title.trim() != "#" {
         task.Title = title.trim().to_string();
@@ -42,7 +57,7 @@ pub fn prompt_field_update(id: usize, group: &Option<String>, conn: &Connection)
         task.Description = description.trim().to_string();
     }
     if status.trim() != "#" {
-        task.isComplete = status.trim().parse().unwrap();
+        task.stage = status.trim().parse().unwrap();
     }
     Ok((task))
 }
@@ -125,6 +140,8 @@ pub fn start(conn: &Connection) {
                     println!("Invalid input!");
                     return;
                 }
+            } else {
+                break;
             }
         }
     }
@@ -139,8 +156,9 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
         println!("2. List Tasks");
         println!("3. Remove Task");
         println!("4. Update Task");
-        println!("5. Save");
-        println!("6. Exit");
+        println!("5. Show Specific Task Status");
+        println!("6. Save");
+        println!("7. Exit");
 
         let choice = take_user_input("Enter your choice: ");
         let choice: u32 = choice.trim().parse().unwrap();
@@ -150,12 +168,13 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                 clear_terminal();
                 let mut title = take_user_input("Enter task title: ");
                 let mut description = take_user_input("Enter task description: ");
+                let mut stage = take_user_input_for_task();
 
                 let id = DB::insert_task(
                     &crate::lib::Task {
                         Title: title.clone().trim().to_string(),
                         Description: description.clone().trim().to_string(),
-                        isComplete: false,
+                        stage: stage.clone(),
                         id: 0,
                     },
                     &fileName,
@@ -208,6 +227,27 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                 }
             }
             5 => {
+                clear_terminal();
+                if list.tasks.len() == 0 {
+                    println!("No tasks to Show");
+                    thread::sleep(Duration::from_secs(1));
+                } else {
+                    list.list_task();
+                    let id = take_user_input("Enter id :- ");
+                    let id = id.trim().parse::<usize>();
+
+                    let task = DB::get_task(id.unwrap(), &fileName, conn);
+                    display_status_bar(task.unwrap().stage);
+
+                    let mut input = take_user_input("\nPress C to continue: ");
+                    println!("{}", input.trim());
+                    if input.trim() != "c" {
+                        println!("Invalid input!");
+                        return;
+                    }
+                }
+            }
+            6 => {
                 if list.tasks.len() == 0 {
                     println!("No tasks to save");
                     thread::sleep(Duration::from_secs(1));
@@ -223,7 +263,7 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                     }
                 }
             }
-            6 => {
+            7 => {
                 break;
             }
             _ => {

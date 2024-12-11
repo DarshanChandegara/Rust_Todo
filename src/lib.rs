@@ -1,21 +1,84 @@
+use ansi_term::Colour;
 use serde::{Deserialize, Serialize};
 use tabled::{settings::Style, Table, Tabled};
-
 #[derive(Serialize, Deserialize, Debug, Tabled)]
 pub struct Task {
     pub id: usize,
     pub Title: String,
     pub Description: String,
-    #[tabled(display_with = "bool_to_status")]
-    pub isComplete: bool,
+    pub stage: String,
 }
 
-fn bool_to_status(completed: &bool) -> String {
-    if *completed {
-        "Complete".to_string()
+pub fn num_to_status(progress: &u8) -> String {
+    if *progress == 1 {
+        "To-Do".to_string()
+    } else if *progress == 2 {
+        "Doing".to_string()
+    } else if *progress == 3 {
+        "Review".to_string()
+    } else if *progress == 4 {
+        "Done".to_string()
     } else {
-        "Pending".to_string()
+        "Invalid state".to_string()
     }
+}
+
+pub fn display_status_bar(status: String) {
+    let stages = ["To-Do", "Doing", "Review", "Done"];
+    let mut current_index;
+
+    if status == "To-Do".to_string() {
+        current_index = 0;
+    } else if status == "Doing".to_string() {
+        current_index = 1;
+    } else if status == "Review".to_string() {
+        current_index = 2;
+    } else if status == "Done".to_string() {
+        current_index = 3;
+    } else {
+        current_index = 4;
+    }
+
+    if current_index > 3 {
+        println!("Invalid Status");
+        return;
+    }
+
+    for (i, stage) in stages.iter().enumerate() {
+        if i < current_index {
+            print!(
+                "{} {} ",
+                Colour::Green.bold().paint("●"),
+                Colour::Green.paint(*stage)
+            );
+        } else if i == current_index {
+            if i == 3 {
+                print!(
+                    "{} {} ",
+                    Colour::Green.bold().paint("●"),
+                    Colour::Green.paint(*stage)
+                );
+            } else {
+                print!(
+                    "{} {} ",
+                    Colour::Yellow.bold().paint("◉"),
+                    Colour::Yellow.paint(*stage)
+                );
+            }
+        } else {
+            print!(
+                "{} {} ",
+                Colour::Red.paint("○"),
+                Colour::Red.dimmed().paint(*stage)
+            );
+        }
+
+        if i != stages.len() - 1 {
+            print!("{} ", Colour::White.paint("─────"));
+        }
+    }
+
+    println!();
 }
 
 pub struct TodoList {
@@ -32,7 +95,7 @@ impl TodoList {
             id: id,
             Title: title.to_string(),
             Description: desc.to_string(),
-            isComplete: false,
+            stage: "To-Do".to_string(),
         };
 
         self.tasks.push(task);
