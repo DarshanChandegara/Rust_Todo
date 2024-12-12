@@ -140,3 +140,29 @@ pub fn update_task(task: &Task, group: &Option<String>, conn: &Connection) -> Re
     )?;
     Ok(())
 }
+
+pub fn search_task(field: String, value: String, conn: &Connection) -> Result<(Vec<Task>)> {
+    let query = format!(
+        "SELECT id, title, description, stage FROM tasks WHERE {} = \"{}\"",
+        field, value
+    );
+    let mut stmt = conn.prepare(&query.as_str())?;
+    let tasks_iter = stmt.query_map([], |row| {
+        let id = row.get::<_, usize>(0)?;
+        let Title = row.get::<_, String>(1)?;
+        let Description = row.get::<_, String>(2)?;
+        let stage = row.get::<_, String>(3)?;
+
+        Ok(Task {
+            id,
+            Title,
+            Description,
+            stage,
+        })
+    })?;
+    let mut tasks: Vec<Task> = Vec::new();
+    for task in tasks_iter {
+        tasks.push(task.unwrap());
+    }
+    Ok(tasks)
+}

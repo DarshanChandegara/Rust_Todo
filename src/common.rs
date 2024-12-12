@@ -59,7 +59,7 @@ pub fn prompt_field_update(id: usize, group: &Option<String>, conn: &Connection)
     if status.trim() != "#" {
         task.stage = status.trim().parse().unwrap();
     }
-    Ok((task))
+    Ok(task)
 }
 
 pub fn clear_terminal() {
@@ -156,9 +156,10 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
         println!("2. List Tasks");
         println!("3. Remove Task");
         println!("4. Update Task");
-        println!("5. Show Specific Task Status");
-        println!("6. Save");
-        println!("7. Exit");
+        println!("5. Search Task");
+        println!("6. Show Specific Task Status");
+        println!("7. Save");
+        println!("8. Exit");
 
         let choice = take_user_input("Enter your choice: ");
         let choice: u32 = choice.trim().parse().unwrap();
@@ -228,6 +229,44 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
             }
             5 => {
                 clear_terminal();
+                println!("1 :- Based On Title");
+                println!("2 :- Based On Group");
+                let choice = take_user_input("Enter Choice :- ");
+                let choice = choice.trim().parse::<u8>().unwrap();
+
+                let mut tasks: Result<(Vec<Task>)> = Ok(Vec::new());
+
+                if choice == 1 {
+                    let value = take_user_input("Enter Value :- ");
+                    tasks = DB::search_task("Title".to_string(), value.trim().to_string(), conn);
+                } else if choice == 2 {
+                    let value = take_user_input("Enter Value :- ");
+                    tasks =
+                        DB::search_task("taskGroup".to_string(), value.trim().to_string(), conn);
+                } else {
+                    println!("Invalid input!");
+                    thread::sleep(Duration::from_secs(1));
+                    continue;
+                }
+
+                match tasks {
+                    Ok(tasks) => {
+                        let mut table = Table::new(&tasks);
+                        println!("{}", table.with(Style::modern_rounded()));
+                        let mut input = take_user_input("\nPress C to continue: ");
+                        println!("{}", input.trim());
+                        if input.trim() != "c" {
+                            println!("Invalid input!");
+                            return;
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error: {}", e);
+                    }
+                }
+            }
+            6 => {
+                clear_terminal();
                 if list.tasks.len() == 0 {
                     println!("No tasks to Show");
                     thread::sleep(Duration::from_secs(1));
@@ -247,7 +286,7 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                     }
                 }
             }
-            6 => {
+            7 => {
                 if list.tasks.len() == 0 {
                     println!("No tasks to save");
                     thread::sleep(Duration::from_secs(1));
@@ -263,7 +302,7 @@ fn run(list: &mut TodoList, fileName: Option<String>, conn: &Connection) {
                     }
                 }
             }
-            7 => {
+            8 => {
                 break;
             }
             _ => {
